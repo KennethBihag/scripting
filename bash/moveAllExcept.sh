@@ -1,7 +1,7 @@
 #! /bin/bash/
 
-expectedArgs="<source directory>:<target directory>"
-expectedCount=2
+expectedArgs="<source directory> <exception file/dir> <target directory> "
+expectedCount=3
 actualArgs="$@"
 actualCount=$#
 export expectedArgs actualArgs expectedCount actualCount
@@ -11,13 +11,11 @@ then exit 1
 fi
 
 source="$1"
-parent="$source/.."
-target="$2"
-folder=${source////}
-folder=${folder: -3}
-echo Folder name : $folder
+except="$2"
+target="$3"
 
-while IFS= read file
-do
-    mv -t "$parent/$target" "$file"
-done < <(ls $parent/* -d | grep -ve "$folder$")
+pushd "$source"
+tomove=$(ls -I "$except")
+mv $tomove -t $target
+popd
+

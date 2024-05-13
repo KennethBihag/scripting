@@ -12,9 +12,8 @@ then
     exit 1
 fi
 
-: 'fname=$(awk -F'/' '{print $NF}' <<< "$infile") '
 IFS=/
-read -a toks <<< $infile
+read -a toks <<< "$infile"
 unset IFS
 fname=${toks[-1]}
 
@@ -56,10 +55,11 @@ dd bs=1 count=$size skip=$toSkip if="$infile" iflag=binary of="$ofile" oflag=bin
 
 while (($parts>1))
 do
-    ofile=${infile//$fname/${i}_$fname}
+    ofile="${infile//$fname/${i}_$fname}"
+    touch "$ofile"
+    chmod --reference="$infile" "$ofile"
     offSet=$(($i*$size + 1))
     tail --bytes=+$offSet "$infile" | head --bytes=$size > "$ofile" &
-
     i=$(($i+1))
     isize=$(($isize-$size))
     parts=$(($parts-1))
@@ -67,6 +67,7 @@ done
 
 if (($isize>0))
 then
-    ofile=${infile//$fname/${i}_$fname}
+    ofile="${infile//$fname/${i}_$fname}"
     tail -c $isize "$infile" > "$ofile"
+    chmod --reference="$infile" "$ofile"
 fi
