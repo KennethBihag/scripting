@@ -1,19 +1,33 @@
-SET "output="
-
 :main
+@REM TODO: Check all functions except CompressSepsToUs
+@Echo Off
+SetLocal EnableExtensions EnableDelayedExpansion
+set output=
 IF [%~1]==[] (
-  ECHO ^< function name ^> ^< ^"'arg1' 'arg2' '...'^" ^> [output var]
+  ECHO ^< function name ^> ^< [arg1] [arg2 ...] ^>
   EXIT /B 0
 )
-SET funcName=%1
-SET args=%2
-CALL :!funcName! %args%
-IF not [%~3]==[] SET %3=!output!
+
+SET funcName=%~1
+:setNewArgs
+For /L %%a In (2,1,16) Do (
+    Call Set tArg=%%%%a
+    If Defined tArg (
+        Set args=!args! !tArg:^&=and!
+    ) Else (
+        Goto :break
+    )
+)
+:break
+
+CALL :!funcName! !args!
+@REM TODO: handle last arg
+@REM IF not [%~3]==[] SET %3=!output!
+EndLocal & Set output=%output%
 EXIT /B 0
 
 rem functions
  rem param 1: array, param 2: pos, param 3: result character
- rem TODO: check
 :get_char_at
   SET array=%~1
   SET pos=%~2
@@ -34,12 +48,10 @@ rem functions
   )
 :return
   SET %~3=!ch!
-
 EXIT /B 0
 
  rem get vertex count and face count of an OBJ file
  rem :GetMeshDataCount <obj file path> <number of vertices variable> <number of faces variable>
- rem TODO: check
  :GetMeshDataCount
 SET numVertices=0
 SET numFaces=0
@@ -83,12 +95,13 @@ FOR /F "delims=. tokens=1*" %%c IN ("%fp%") DO (
 )
 EXIT /B 0
 
-:CompressSpacesToUs
+:CompressSepsToUs
 SET "fp=%~1"
+SET "seps=%~2"
 CALL :csstuhelper "!fp!"
 EXIT /B 0
 :csstuhelper
-FOR /F "tokens=1*" %%c IN ("%~1") DO (
+FOR /F "tokens=1* delims=%seps%" %%c IN ("%~1") DO (
     IF "!output!"=="" (SET "output=%%c") ELSE (SET output=!output!_%%c)
     IF NOT "%%d"=="" CALL :csstuhelper "%%~d"
 )

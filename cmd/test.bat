@@ -20,6 +20,6 @@ ECHO extension is !output!
 CALL my_functions GetFileExt "folder with\some spaces\file with.more.than one.dot.txt"
 ECHO extension is !output!
 
-CALL my_functions CompressSpacesToUs "  abc de   fgh.i.j.pdf"
+CALL my_functions CompressSepsToUs "C:\Users\Public\Documents\books\others\Sergey Filonov - 20 Questions & Answers About Dry Fasting.pdf" "_- "
 ECHO new name:!output!
 EndLocal
