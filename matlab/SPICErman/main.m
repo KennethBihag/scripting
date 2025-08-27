@@ -1,57 +1,66 @@
 display('SPICErman Stay at Home');
 display('Already linearized');
 
-In.V.AC = 0;
-In.V.DC = 10;
-R = [1000; 500; 250; 1000;];
+vDc = 10;
+R = [1000 500 200];
 
 % Design 3
 %% linearized already
 Vf = 0.714592;
 A = [
-R(1)   0  R(3)    0;
-   0 R(2)    0 R(4);
-   0 R(2) R(3)    0;
-   1    1   -1   -1;
+    R(1)+R(3), R(3);
+    R(3), R(2)+R(3);
 ];
 
 B = [
-In.V.DC-Vf;
-In.V.DC;
-In.V.DC;
-      0;
+    vDc-Vf;
+    vDc;
 ];
 
-% x: I1 I2 I3 I4
-% x = inv(A)*B
-x = A\B;
-V = x .* R
-Req = Vf/x(1)
+x = A\B; % I1; I2;
+Req = Vf/x(1);
+fprintf('Vd=%.6f, I1=%.2e, I2=%.2e, r=%.2e\n\n', ...
+    Vf, x(1), x(2), Vf/x(1));
 
 %% not yet linearized
 display('Linearizing...');
-clear Vf A B x V;
 Is = 5.950e-6;
+%Is = 1e-15;
 Vt = 0.02585;
-Vd0= 1;
-vPrev = Vd0;
-for n=1:1:5
-r = ((Is/Vt)*exp(Vd0/Vt))^-1
+Vd= 0.9;
+n = 0;
+
+while true
+n = n+1;
+fprintf("Iter%d\n", n);
+Id = Is*(exp(Vd/Vt)-1);
+r = Vt / (Is * exp(Vd/Vt));
+Ieq = Id - Vd/r;
+fprintf("\tVd=%.6f, Id=%.2e, r=%.2e, Ieq=%.2e\n", ...
+    Vd, Id, r, Ieq);
 A = [
-R(1), 0, R(3), 0, r-R(1);
-R(1), 0, 0, R(4), r-R(1);
-0, R(2), R(3), 0, 0;
-0, R(2), 0, R(4), 0;
-1, 1, -1, -1, 0;
-]
-B = [
-In.V.DC;
-In.V.DC;
-In.V.DC;
-In.V.DC;
-      0;
+    R(1)+R(3)+r, R(3);
+    R(3), R(2)+R(3)
 ];
-x = A\B % I1 I2 I3 I4 Ieq
-Vd0 = x(5)
-dV = Vd0 - vPrev
+B = [ % I1 I2
+    vDc + Ieq*r;
+    vDc;
+];
+if n > 1
+    di = x(1);
+end
+x = A\B; % I1 I2
+Ir = (x(1)-Ieq);
+Vd = Ir * r;
+r2 = Vd/x(1);
+%Vd = vDc - R(1)*x(1) - (x(1)+x(2))*R(3);
+fprintf("\tVd=%.6f, I1=%.2e, I2=%.2e, Ir=%.2e, Ir2=%.2e\n", ...
+    Vd, x, Ir, r2);
+if n > 1
+    di = x(1)-di;
+    if abs(di) <= 1e-6
+        break
+    end
+end
+
 end
