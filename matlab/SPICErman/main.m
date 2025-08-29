@@ -1,66 +1,65 @@
 display('SPICErman Stay at Home');
-display('Already linearized');
+Vf = 0.71278;
+vDc =10;
+R = [100 10^4];
 
-vDc = 10;
-R = [1000 500 200];
-
-% Design 3
 %% linearized already
-Vf = 0.714592;
+display('Already linearized... voltage source');
+I1 = (vDc-Vf)/(R(1)+R(2));
+Req = Vf/I1;
+fprintf('Vd=%.6f, I1=%.2e, Req=%.2e\n\n', ...
+    Vf, I1, Req);
+
+display('Already linearized... current source');
+iDc = 0.1;
 A = [
-    R(1)+R(3), R(3);
-    R(3), R(2)+R(3);
+    1 1 0;
+    0 -1 1/R(2);
+    1 0 -1/R(1)
 ];
-
 B = [
-    vDc-Vf;
-    vDc;
+  iDc;
+  Vf/R(2);
+  0
 ];
-
-x = A\B; % I1; I2;
-Req = Vf/x(1);
-fprintf('Vd=%.6f, I1=%.2e, I2=%.2e, r=%.2e\n\n', ...
-    Vf, x(1), x(2), Vf/x(1));
+x = A\B; % I1 I2 V1
+fprintf('Vd=%.6f, V1=%.6f, I1=%.2e, I2=%.2e, Req=%.2e\n\n', ...
+    Vf, x(3), x(1), x(2), Req);
 
 %% not yet linearized
 display('Linearizing...');
-Is = 5.950e-6;
-%Is = 1e-15;
 Vt = 0.02585;
-Vd= 0.9;
-n = 0;
+Is = 1e-15;
+n=0;
+Vd = 1;
 
 while true
-n = n+1;
-fprintf("Iter%d\n", n);
-Id = Is*(exp(Vd/Vt)-1);
-r = Vt / (Is * exp(Vd/Vt));
-Ieq = Id - Vd/r;
-fprintf("\tVd=%.6f, Id=%.2e, r=%.2e, Ieq=%.2e\n", ...
-    Vd, Id, r, Ieq);
-A = [
-    R(1)+R(3)+r, R(3);
-    R(3), R(2)+R(3)
-];
-B = [ % I1 I2
-    vDc + Ieq*r;
-    vDc;
-];
-if n > 1
-    di = x(1);
-end
-x = A\B; % I1 I2
-Ir = (x(1)-Ieq);
-Vd = Ir * r;
-r2 = Vd/x(1);
-%Vd = vDc - R(1)*x(1) - (x(1)+x(2))*R(3);
-fprintf("\tVd=%.6f, I1=%.2e, I2=%.2e, Ir=%.2e, Ir2=%.2e\n", ...
-    Vd, x, Ir, r2);
-if n > 1
-    di = x(1)-di;
-    if abs(di) <= 1e-6
+    n = n+1;
+    fprintf("Iter%d\n", n);
+    Id = Is*(exp(Vd/Vt)-1);
+    r = Vt / (Is * exp(Vd/Vt));
+    Ir = Vd/r;
+    Ieq = Id - Vd/r;
+    fprintf("\tVd=%.6f, Id=%.2e, r=%.2e, Ieq=%.2e, Ir=%.2e\n", ...
+        Vd, Id, r, Ieq, Ir);
+    A = [
+        1/R(1)+1/R(2), -1/R(2);
+        1/R(2), -(1/R(2)+1/r)
+    ];
+    B = [
+        iDc;
+        Ieq
+    ];
+    x = A\B; % I1 I2 V1
+    dv = Vd;
+    Vd = x(2);
+    dv = Vd-dv;
+    Ir = Vd / r;
+    r2 = Ir+Ieq;
+    
+    fprintf("\tVd=%.6f, I1=%.2e, I2=%.2e, Ir=%.2e, r2=%.2e\n", ...
+        Vd, x(1), x(2), Ir, r2);
+    if abs(dv) < 0.001
         break
     end
-end
-
 end
