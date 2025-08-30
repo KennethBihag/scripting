@@ -1,0 +1,10 @@
+Vin -> R1 -> D1 -> gnd
+Vin -> R1 -> C1 -> gnd
+
+Vin 5V DC
+R1 1kohm
+D1 Is=1e-15 A (not sure) Vf=0.6 V
+
+Measured:
+I1 4.990A to 4.390 in 130.177e-6 s
+Vd 601.227e-3 V in 130.177e-6 s
