@@ -1,41 +1,50 @@
 Vin=   5;
-R1=    1000;
+r1=    1e3;
 C1=    1e-6;
 Is=    2.74e-13;
 Vt=    0.02585;
-RC=    R1*C1;
+RC=    C1*r1;
 tStop= RC*5*2;
-steps= 99;
+steps= 100;
 dt=    tStop/steps;
 xPts=  linspace(0, tStop, steps+1);
 yPts=  zeros(1, steps+1);
 
-ic=-Vin/R1;
 rc=dt/C1;
 n=1;
-for t=xPts
-    yPts(n)=ic*rc;
-    dv=100;
-    Vd=0.8;
-    while abs(dv) > 0.0001
-        Id=Is*(exp(Vd/Vt)-1);
-        rd=Vt / (Is * exp(Vd/Vt));
-        id=Id - Vd/rd;
+Vc=0;
+for t=xPts      
+    Vd=0.7;
+    dv=1;
+    m=0;
+    while dv > 0.0001
+        m=m+1;
+        rd=Vt/(Is * exp(Vd/Vt));
+        ID=Is*(exp(Vd/Vt)-1);
+        id=ID - Vd/rd;
+
         A=[
-            1, -1, -1;
-            R1, rd, 0;
-            R1, 0, rc
+            1, -r1;
+            1, rd
         ];
         B=[
-            ic+id;
-            Vin;
-            Vin
+            0;
+            id*rd + Vin
         ];
-        x=A\B; % I1, ird, irc
-        vOld=Vd;
-        Vd=x(2)*rd;
-        dv=Vd-vOld;
+        x=A\B;% V1, ir1
+        
+        vdOld=Vd;
+        Vd=Vin-x(1);
+        dv=abs(Vd-vdOld);        
     end
+    fprintf('\t%d iters for linearization\n', m);
+    rp=r1*rc/(r1+rc);
+    currS=x(1)/rp;
+    ic = Vc/rc;
+    irc=(ic+currS)*(1/rc)/(1/r1+1/rc);
+    yPts(n)=Vc;
+    Vc=irc*rc;
+
     n=n+1;
 end
-Vd
+fprintf('%d iters for integration\n', n-1);
