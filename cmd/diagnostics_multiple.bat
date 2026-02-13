@@ -3,14 +3,27 @@ rem Gives a space delimited file for diagnostics of multiple
 rem instances of an image/process
 setlocal EnableDelayedExpansion
 
-set "imageName=%~1"
-if [!imageName!]==[] (
- call :PrintHelp
- exit /B 1
+set /a "g_pid=%~1"
+if %g_pid% lss 1 (
+  set "imageName=%~1"
+  if [!imageName!]==[] (
+  call :PrintHelp
+  exit /B 1
+  )
+) else (
+  for /f "tokens=1" %%f in ('tasklist /fi "PID eq %g_pid%" /nh') do (
+    set "imageName=%%~f"
+  )
 )
 set outFile=!imageName!_diag.txt
 if exist !outFile! del !outFile!
-ECHO Program : Running diagnostics for all !imageName! running...
+if %g_pid% gtr 0 (
+  echo Program : Running diagnostics for !imageName! with PID !g_pid! running...
+  set "filter=PID eq %g_pid%"
+) else (
+  echo Program : Running diagnostics for all !imageName! running...
+  set "filter=IMAGENAME eq !imageName!"
+)
 rem call :ShowTime hours minutes seconds
 rem echo !hours! - !minutes! - !seconds!
 call :ShowTime allTime
@@ -21,7 +34,7 @@ for /L %%i in (1,1,1000000) DO (
  rem call :ShowTime hours,minutes,seconds
  rem echo !hours! - !minutes! - !seconds!
  call :ShowTime allTime
- for /f "tokens=2,5,9" %%f in ('TASKLIST /FI "IMAGENAME eq !imageName!" /V /NH') do (
+ for /f "tokens=2,5,9" %%f in ('TASKLIST /FI "!filter!" /V /NH') do (
   set "pid=%%~f"
   set memUsage=%%g
   set cpuTime=%%h
@@ -36,7 +49,7 @@ exit /B 0
 endlocal
 rem functions
 :PrintHelp
-echo Diagnostics.bat ^< Program ^>
+echo Diagnostics.bat ^< Program ^| PID ^>
 Exit /B 0
 :ShowTime
 set /a A=0
